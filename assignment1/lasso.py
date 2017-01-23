@@ -2,17 +2,28 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def load_data(datadir):
+def load_data(datadir, validation=False, valsplit=0.1, rand_seed=200):
     df_train = pd.read_table(datadir + '/crime-train.txt')
     df_test = pd.read_table(datadir + '/crime-test.txt')
 
-    X_train = df_train.iloc[:, 1:].values
-    y_train = df_train.iloc[:, :1].values.reshape(-1)
-
+    
     X_test = df_test.iloc[:, 1:].values
     y_test = df_test.iloc[:, :1].values.reshape(-1)
 
-    return (X_train, y_train, X_test, y_test, df_train, df_test)
+    if validation:
+        df_val_split = df_train.sample(frac=valsplit, random_state=rand_seed)
+        df_train_split = df_train.drop(df_val_split.index)
+        
+        X_train = df_train_split.iloc[:, 1:].values
+        y_train = df_train_split.iloc[:, :1].values.reshape(-1)
+        X_val = df_val_split.iloc[:, 1:].values
+        y_val = df_val_split.iloc[:, :1].values.reshape(-1)
+        
+        return (X_train, y_train, X_val, y_val, X_test, y_test, df_train, df_test)
+    else:
+        X_train = df_train.iloc[:, 1:].values
+        y_train = df_train.iloc[:, :1].values.reshape(-1)
+        return (X_train, y_train, X_test, y_test, df_train, df_test)
 
 def lasso_solver(X, y, w, reg):
     z = (X ** 2).sum(axis=0)
@@ -39,9 +50,7 @@ def lasso_models(X, y, regs):
         W = np.vstack((W, lasso_solver(X, y, w, regs[i])))
     return W
 
-def plot_regpath(df, W, regs, features):
-    ids = [df.columns.get_loc(feature) - 1 for feature in features]
-
+def plot_regpath(W, regs, features, ids):
     plt.title('Regularization Paths')
     plt.xlabel('log(lambda)')
     plt.ylabel('weights')
