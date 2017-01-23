@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def load_data(datadir, validation=False, valsplit=0.1, rand_seed=200):
+def load_data(datadir, validation=False, split=0.9, rand_seed=200):
     df_train = pd.read_table(datadir + '/crime-train.txt')
     df_test = pd.read_table(datadir + '/crime-test.txt')
 
@@ -11,8 +11,8 @@ def load_data(datadir, validation=False, valsplit=0.1, rand_seed=200):
     y_test = df_test.iloc[:, :1].values.reshape(-1)
 
     if validation:
-        df_val_split = df_train.sample(frac=valsplit, random_state=rand_seed)
-        df_train_split = df_train.drop(df_val_split.index)
+        df_train_split = df_train.sample(frac=split, random_state=rand_seed)
+        df_val_split = df_train.drop(df_train_split.index)
         
         X_train = df_train_split.iloc[:, 1:].values
         y_train = df_train_split.iloc[:, :1].values.reshape(-1)
@@ -62,7 +62,7 @@ def plot_sqerr(X, y, W, regs):
     err = ((np.matmul(X, W.T).T - y) ** 2).sum(axis=1)
     plt.title('squared erros:')
     plt.xlabel('log(lambda)')
-    plt.xlabel('squared errors')
+    plt.ylabel('squared errors')
     plt.plot(np.log(regs), err, marker='o')
     plt.show()
 
@@ -74,10 +74,36 @@ def plot_nonzero(W, regs):
     plt.plot(regs, W_count, marker='o')
     plt.show()
 
+def tune_reg(X, y, W, regs):
+    err = ((np.matmul(X, W.T).T - y) ** 2).sum(axis=1)
+    best_reg = regs[np.argmin(err)]
+    return best_reg
+
+def max_min_w(df, W, regs, best_reg):
+    best_w = W[np.where(regs==best_reg), :]
+    max_w_i = np.argmax(best_w)
+    min_w_i = np.argmin(best_w)
+    return df.columns[[max_w_i + 1, min_w_i + 1]].tolist()
+
 def main():
-    X_train, y_train, X_test, y_test, df_train, df_test = load_data('data')
+    X_train, y_train, X_val, y_val, X_test, y_test, df_train, df_test = load_data('data', validation=True, split=0.9)
     regs = np.array([600.0 / (2 ** i) for i in range(10)])
     W = lasso_models(X_train, y_train, regs)
+
+    features = ['agePct12t29', 'pctWSocSec', 'PctKids2Par', 'PctIlleg', 'HousVacant']
+    ids = [df_train.columns.get_loc(feature) - 1 for feature in features]
+    plot_regpath(W, regs, features, ids)
+
+    plot_sqerr(X_train, y_train, W, regs)
+    plot_sqerr(X_test, y_test, W, regs)
+    plot_nonzero(W, regs)
+
+    plot_sqerr(X_val, y_val, W, regs)
+    best_reg = tune_reg(X_val, y_val, W, regs)
+    print 'best validation error at reg=' + str(best_reg)
+
+    max_w_i, min_w_i = max_min_w(df_train, W, regs, best_reg)
+    print 'Maximum Parameter: ' + max_w_i + ' and Minimum Parameter: ' + min_w_i
 
 if __name__ == '__main__':
     main()
