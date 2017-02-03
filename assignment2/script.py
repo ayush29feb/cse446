@@ -6,58 +6,65 @@ def load_data(filepath):
     df = pd.read_csv(filepath)
     X = df.iloc[:, 1:].values
     y = df.iloc[:, :1].values.reshape(-1)
+    features = df.iloc[:, 1:].columns.values
 
-    return (X, y)
+    return (X, y, features)
 
 def linear_loss(X, y , w):
-    N = X.shape[0] * 1.0 # N is expected to be 1 in sgd
     y_ = np.matmul(X, w) # X (N, D) w(D,) = Xw (N,)
     if y is None:
-        return y_
+        return (y_ > 0.5) * 1
     
-    loss = np.sum((y - y_) ** 2) / N
+    loss = np.sum((y - (y_ > 0.5) * 1) ** 2)
     dw = -2 * np.matmul(X.T, y - y_)
     return (loss, dw)
 
 def logistic_loss(X, y, w):
-    N = X.shape[0] * 1.0 # N is expected to be 1 in sgd
     y_ = (1 + np.exp(-1 * np.matmul(X, w))) ** -1 # X (N, D) w(D,) = Xw (N,)
     if y is None:
         return (y_ > 0.5) * 1.0
 
-    loss = np.sum((y - (y_ > 0.5) * 1) ** 2) / N
+    loss = np.sum((y - (y_ > 0.5) * 1) ** 2)
     dw = -1 * np.matmul(X.T, y - y_)
     return (loss, dw)
 
-def train(X, y, w, loss_fn, netta, itr, logs=None):
+def train(X, y, w, loss_fn, eta, itr, logs=None):
     N = X['train'].shape[0]
 
     if logs is not None:
         logs['total_loss'] = 0
-        logs['losses'] = {'x': None, 'y': []}
+        logs['train_losses'] = {'x': None, 'y': []}
         logs['test_losses'] = {'x': None, 'y': []}
         logs['l2s'] = {'x': None, 'y': []}
 
+    W = np.zeros(w.shape)
+
     for i in range(itr):
         loss, dw = loss_fn(X['train'][i % N, :].reshape(1, -1), y['train'][i % N].reshape(1,), w)
-        w -= netta * dw
+        w -= eta * dw
         
+        if i >= (itr - N):
+            W += w
+
         if logs is not None:
             logs['total_loss'] += loss
             if (i + 1) % 100 == 0:
-                logs['losses']['y'].append(1.0 * logs['total_loss'] / (i + 1))
+                # train loss - (4.2.b.i)
+                logs['train_losses']['y'].append(1.0 * logs['total_loss'] / (i + 1))
+                # test loss - (4.2.b.iii)
                 test_loss, _ = loss_fn(X['test'], y['test'], w)
                 logs['test_losses']['y'].append(test_loss)
             if (i + 1) % N == 0:
+                # l2 of weights - (4.2.b.ii)
                 logs['l2s']['y'].append(np.sum(w ** 2))
     
     if logs is not None:
-        logs['losses']['x'] = (np.arange(len(logs['losses']['y'])) + 1) * 100
+        logs['train_losses']['x'] = (np.arange(len(logs['train_losses']['y'])) + 1) * 100
         logs['test_losses']['x'] = (np.arange(len(logs['test_losses']['y'])) + 1) * 100
         logs['l2s']['x'] = (np.arange(len(logs['l2s']['y'])) + 1) * N
         del logs['total_loss']
     
-    return w
+    return W / N
 
 def main():
     X_train, y_train = load_data('dataset/train.csv')
