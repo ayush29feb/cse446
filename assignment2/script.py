@@ -66,23 +66,92 @@ def train(X, y, w, loss_fn, eta, itr, logs=None):
     
     return W / N
 
+def plot_graphs(logistic_logs, linear_logs, etas):
+    for eta in etas:
+        plt.plot(logistic_logs[eta]['train_losses']['x'], logistic_logs[eta]['train_losses']['y'])
+        plt.title('Logistic Reg. Training Avg. Loss: eta=' + str(eta))
+        plt.xlabel('time step t')
+        plt.ylabel('loss')
+        plt.show()
+    
+    for eta in etas:
+        plt.plot(logistic_logs[eta]['l2s']['x'], logistic_logs[eta]['l2s']['y'])
+        plt.title('Logistic Reg. L2(Weight): eta=' + str(eta))
+        plt.xlabel('time step t')
+        plt.ylabel('L2(weights)')
+        plt.show()
+    
+    for eta in etas:
+        plt.plot(logistic_logs[eta]['test_losses']['x'], logistic_logs[eta]['test_losses']['y'])
+        plt.title('Logistic Reg. Test Losses: eta=' + str(eta))
+        plt.xlabel('time step t')
+        plt.ylabel('loss')
+        plt.show()
+    
+    for eta in etas:
+        plt.plot(linear_logs[eta]['train_losses']['x'], linear_logs[eta]['train_losses']['y'])
+        plt.title('Linear Reg. Training Avg. Loss: eta=' + str(eta))
+        plt.xlabel('time step t')
+        plt.ylabel('loss')
+        plt.show()
+    
+    for eta in etas:
+        plt.plot(linear_logs[eta]['l2s']['x'], linear_logs[eta]['l2s']['y'], marker='o')
+        plt.title('Linear Reg. L2(Weight): eta=' + str(eta))
+        plt.xlabel('time step t')
+        plt.ylabel('L2(weights)')
+        plt.show()
+
+    for eta in etas:
+        plt.plot(linear_logs[eta]['test_losses']['x'], linear_logs[eta]['test_losses']['y'])
+        plt.title('Linear Reg. Test Losses: eta=' + str(eta))
+        plt.xlabel('time step t')
+        plt.ylabel('loss')
+        plt.show()
+
 def main():
-    X_train, y_train = load_data('dataset/train.csv')
-    X_test, y_test = load_data('dataset/test.csv')
+    X_train, y_train, features = load_data('dataset/train.csv')
+    X_test, y_test, _ = load_data('dataset/test.csv')
 
     X_train = np.append(X_train, np.ones((X_train.shape[0], 1)), axis=1)
     X_test = np.append(X_test, np.ones((X_test.shape[0], 1)), axis=1)
 
-    logs = {}
-    train({'train': X_train, 'test': X_test},
-        {'train': y_train, 'test': y_test}, 
-        np.zeros(X_train.shape[1]), 
-        logistic_loss, 0.8, X_train.shape[0] * 10, logs)
+    X = {'train': X_train, 'test': X_test}
+    y = {'train': y_train, 'test': y_test}
 
-    for key in logs:
-        plt.plot(logs[key]['x'], logs[key]['y'], marker='o')
-        plt.title(key)
-        plt.show()
+    N, D = X_train.shape
+    etas = [0.8, 1e-3, 1e-5]
+
+    # plots
+    logistic_logs = {}
+    linear_logs = {}
+    for eta in etas:
+        logistic_logs[eta] = {}
+        train(X, y, np.zeros(D), logistic_loss, eta, 10 * N, logistic_logs[eta])
+        linear_logs[eta] = {}
+        train(X, y, np.zeros(D), linear_loss, eta, 10 * N, linear_logs[eta])
+    
+    plot_graphs(logistic_logs, linear_logs, etas)
+
+    # Best Model
+    logistic_w = {}
+    logistic_logs = {}
+    for eta in etas:
+        logistic_logs[eta] = {}
+        logistic_w[eta] = train(X, y, np.zeros(D), logistic_loss, eta, 100000, logs=logistic_logs[eta])
+
+    best_eta = etas[0]
+    best_loss, _ = logistic_loss(X['train'], y['train'], logistic_w[best_eta])
+    for eta in etas[1:]:
+        loss, _ = logistic_loss(X['train'], y['train'], logistic_w[eta])
+        if loss < best_loss:
+            best_eta = eta
+            best_loss = loss
+
+    print 'best eta=' + str(best_eta) + ' with loss=' + str(best_loss)
+    features_ = np.array(['BMI', 'insulin', 'PGC'])
+    ids = [np.argmax(features == f) for f in features_]
+    print str(features_) + " = " + str(logistic_w[best_eta][ids])
 
 if __name__ == '__main__':
     main()
