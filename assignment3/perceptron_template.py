@@ -37,8 +37,7 @@ def linear_kernel(u, v):
     Computes a the linear kernel K(u, v) = u dot v + 1
     """
     # TODO: Implement the linear kernel function.
-    pass
-
+    return np.dot(u, v) + 1
 
 def make_polynomial_kernel(d):
     """
@@ -47,7 +46,7 @@ def make_polynomial_kernel(d):
     """
     def kernel(u, v):
         # TODO: Implement the polynomial kernel function.
-        pass
+        return (np.dot(u, v) + 1) ** d
 
     return kernel
 
@@ -58,7 +57,7 @@ def exponential_kernel(u, v):
     """
     sigma = 10
     # TODO: Implement the exponential kernel function.
-    pass
+    return np.exp(np.sqrt(np.sum((u - v) ** 2, axis=1)) / (-2 * sigma * sigma))
 
 
 
@@ -77,7 +76,7 @@ def compute_y_hat(x_t, y_mistake, X_mistake, kernel):
         return sign(0)
     else:
         # TODO: Compute y hat.
-        pass
+        return sign(np.sum(kernel(X_mistake, x_t) * y_mistake))
 
 
 def compute_loss(m):
@@ -106,10 +105,10 @@ def fit_perceptron(df, kernel):
         # length-N vector of any type, you can grab the elements of x, where b
         # is True with x[b]. Try it. Similarly, if X is an N-by-D matrix, you
         # can grab the rows of X where b is True with X[b].
-        x_t = None              # Put in your values for these variables.
-        y_t = None
-        y_mistake = None
-        X_mistake = None
+        x_t = X[t, :]              # Put in your values for these variables.
+        y_t = y[t]
+        y_mistake = y[m]
+        X_mistake = X[m]
         y_hat = compute_y_hat(x_t, y_mistake, X_mistake, kernel)
         if y_hat != y_t:
             m[t] = True         # Store the mistake if the model guessed wrong.
@@ -153,7 +152,7 @@ def run_polynomial_kernel():
 def run_poly_expon():
     "Analysis for part 3 of question 4.4."
     # TODO: Supply the best-performing degree for the polynomial kernel
-    best_degree = None          # Put in your value.
+    best_degree = 3          # Put in your value.
     data = get_data()
     test = data["test"]
     kernel_poly = make_polynomial_kernel(best_degree)
