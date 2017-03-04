@@ -94,9 +94,12 @@ def assign(X, Mu):
     Mu is the kxD matrix of cluster centroids.
     """
     # TODO: Compute the assignments z.
-    z = None
-    return z
-
+    N = X.shape[0]
+    k = Mu.shape[0]
+    z = np.zeros((N, k))
+    for j in range(k):
+        z[:, j] = np.sum((X - Mu[j]) ** 2, axis=1)
+    return np.argmin(z, axis=1)
 
 def update(X, z, k):
     """
@@ -107,7 +110,11 @@ def update(X, z, k):
     k is the number of clusters.
     """
     # TODO: Compute the cluster centroids Mu.
-    Mu = None
+    N, D = X.shape
+    Mu = np.zeros((k, D))
+    counts = np.bincount(z)
+    for j in range(k):
+        Mu[j, :] = np.sum(X[z == j, :], axis=0) / counts[j]
     return Mu
 
 
@@ -117,7 +124,9 @@ def compute_distortion(X, Mu, z):
     data X, kxD centroids Mu, and Nx1 assignments z.
     """
     # TODO: Compute the within-group sum of squares (the distortion).
-    distortion = None
+    distortion = 0
+    for j in range(Mu.shape[0]):
+        distortion += np.sum((X[z == j, :] - Mu[j]) ** 2)
     return distortion
 
 
@@ -127,7 +136,8 @@ def initialize(X, k):
     choosing k data points randomly from the data set X.
     """
     # TODO: Initialize Mu.
-    Mu = None
+    idxs = np.random.choice(X.shape[0], k, replace=False)
+    Mu = X[idxs, :]
     return Mu
 
 
@@ -144,7 +154,10 @@ def label_clusters(y, k, z):
     z is the Nx1 vector of cluster assignments.
     """
     # TODO: Compute the cluster labelings.
-    labels = None
+    labels = np.zeros(k)
+    for j in range(k):
+        labels[j] = np.argmax(np.bincount(y[z == j]))
+    print labels
     return labels
 
 
