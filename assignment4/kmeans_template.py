@@ -4,7 +4,7 @@ K-means clustering.
 
 import numpy as np
 from matplotlib import pyplot as plt
-
+from mpl_toolkits.mplot3d import Axes3D
 
 def analyze_kmeans():
     """
@@ -83,6 +83,11 @@ def cluster(X, y, k, n_starts=5):
     results = [loop(X, i) for i in range(n_starts)]
     best = min(results, key=lambda entry: entry["distortion"])
     best["digits"] = label_clusters(y, k, best["z"])
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(X[:, 75], X[:, 103], X[:, 36], c=best['z'], s=100)
+    ax.set_title('k=' + str(k))
+    fig.savefig(str(k) + '-means.png')
     return best
 
 
