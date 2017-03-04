@@ -157,7 +157,6 @@ def label_clusters(y, k, z):
     labels = np.zeros(k)
     for j in range(k):
         labels[j] = np.argmax(np.bincount(y[z == j]))
-    print labels
     return labels
 
 
