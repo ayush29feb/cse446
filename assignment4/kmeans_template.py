@@ -16,6 +16,15 @@ def analyze_kmeans():
     distortions = []
     errs = []
     ks = range(1, 11)
+
+    ## Extra plotting for understading. 3D with highest variance
+    for x in np.unique(y):
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(X[y == x, 75], X[y == x, 103], X[y == x, 36], s=100)
+        ax.set_title('real')
+        fig.savefig('real' + str(x) + '.png')
+
     for k in ks:
         distortion, err = analyze_one_k(X, y, k)
         distortions.append(distortion)
@@ -83,11 +92,15 @@ def cluster(X, y, k, n_starts=5):
     results = [loop(X, i) for i in range(n_starts)]
     best = min(results, key=lambda entry: entry["distortion"])
     best["digits"] = label_clusters(y, k, best["z"])
+    
+    ## Extra plotting for understading. 3D with highest variance
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(X[:, 75], X[:, 103], X[:, 36], c=best['z'], s=100)
     ax.set_title('k=' + str(k))
     fig.savefig(str(k) + '-means.png')
+    
+    
     return best
 
 
